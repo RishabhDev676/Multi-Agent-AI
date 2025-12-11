@@ -1,0 +1,333 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Multi-Agent AI Demo — Progressive Output (Markdown Supported)</title>
+
+  <!-- Marked.js: Markdown → HTML Converter -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 30px;
+  min-height: 100vh;
+  background: #2D2545; /* Dark lavender */
+  color: #EDEAFF;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+/* ---------------- TEAM APEX ANIMATION ---------------- */
+
+.team-apex {
+  text-align: center;
+  font-weight: 500;
+  margin-top: -6px;
+  margin-bottom: 14px;
+  opacity: 0;
+  animation: apexFade 1.2s ease forwards;
+  animation-delay: 0.3s;
+  letter-spacing: 1px;
+}
+
+@keyframes apexFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------------- HEADINGS ---------------- */
+
+h2 {
+  text-align: center;
+  font-size: 34px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #FFFFFF;
+  opacity: 0;
+  animation: fadeIn 0.8s ease forwards;
+}
+
+p {
+  text-align: center;
+  font-size: 15px;
+  opacity: 0.7;
+  animation: fadeIn 1s ease forwards;
+}
+
+/* ---------------- INPUT AREA ---------------- */
+
+textarea {
+  width: 100%;
+  height: 140px;
+  border-radius: 14px;
+  font-size: 16px;
+  padding: 14px;
+  border: none;
+  outline: none;
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  backdrop-filter: blur(10px);
+  transition: 0.3s;
+  animation: fadeIn 1.2s ease forwards;
+}
+
+textarea:focus {
+  background: rgba(255,255,255,0.15);
+  box-shadow: 0 0 10px rgba(150,130,255,0.3);
+}
+
+/* ---------------- BUTTON ---------------- */
+
+button {
+  padding: 14px 22px;
+  font-size: 16px;
+  margin-top: 12px;
+  font-weight: 700;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  color: white;
+  background: linear-gradient(135deg, #7C4DFF, #9F6BFF);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  animation: fadeIn 1.2s ease forwards;
+}
+
+button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(140,110,255,0.4);
+}
+
+/* ---------------- LABEL ---------------- */
+
+.label {
+  font-weight: 700;
+  margin-top: 25px;
+  font-size: 20px;
+  animation: fadeIn 1.3s ease forwards;
+}
+
+/* ---------------- AGENT BOXES ---------------- */
+
+.agent-box {
+  padding: 20px;
+  border-radius: 16px;
+  margin-top: 10px;
+  min-height: 100px;
+  color: white;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 0 14px rgba(0,0,0,0.25);
+  opacity: 0;
+  animation: fadeSlide 0.8s ease forwards;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Hover glow effect */
+.agent-box:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 18px rgba(180,150,255,0.3);
+}
+
+/* Custom pastel neon accents */
+#planner { background: rgba(124,77,255,0.22); }
+#analyzer { background: rgba(0,180,216,0.18); }
+#executor { background: rgba(255,159,67,0.18); }
+#referee { background: rgba(50,205,120,0.18); }
+
+/* ---------------- LOG BOX ---------------- */
+
+#log {
+  background: rgba(255,255,255,0.10);
+  padding: 15px;
+  border-radius: 14px;
+  margin-top: 15px;
+  max-height: 180px;
+  overflow: auto;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.25);
+  font-size: 14px;
+  color: #E3E0FA;
+  animation: fadeIn 1.4s ease forwards;
+}
+
+/* ---------------- ANIMATIONS ---------------- */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+  </style>
+</head>
+
+<body>
+
+  <h2>Multi-Agent AI Demo — Progressive Output</h2>
+  <h3 class="team-apex">by Team Apex</h3>
+
+  <p>The system will display “waiting” messages, then reveal each agent's result as soon as it arrives.</p>
+
+  <textarea id="task" placeholder="E.g. Design a cybersecurity dashboard with 5 widgets"></textarea>
+  <br/>
+  <button id="run">Run Agents (stream)</button>
+  <span id="status" style="margin-left:12px;color:#666"></span>
+
+  <div class="label">Planner</div>
+  <div id="planner" class="agent-box">(waiting...)</div>
+
+  <div class="label">Analyzer</div>
+  <div id="analyzer" class="agent-box">(waiting...)</div>
+
+  <div class="label">Executor</div>
+  <div id="executor" class="agent-box">(waiting...)</div>
+
+  <div class="label">Referee</div>
+  <div id="referee" class="agent-box">(waiting...)</div>
+
+  <div class="label">Log</div>
+  <div id="log">(no events yet)</div>
+
+<script>
+    const runBtn = document.getElementById('run');
+    const taskEl = document.getElementById('task');
+
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('log');
+
+    const plannerEl = document.getElementById('planner');
+    const analyzerEl = document.getElementById('analyzer');
+    const executorEl = document.getElementById('executor');
+    const refereeEl = document.getElementById('referee');
+
+    function appendLog(msg) {
+      const time = new Date().toLocaleTimeString();
+      logEl.textContent = `[${time}] ${msg}\n` + logEl.textContent;
+    }
+
+    // Render Markdown into HTML safely
+    function renderMarkdown(targetEl, text) {
+      targetEl.innerHTML = marked.parse(text);
+    }
+
+    runBtn.addEventListener('click', async () => {
+      const input = taskEl.value.trim();
+      if (!input) { alert('Type a task first'); return; }
+
+      // Reset UI
+      statusEl.textContent = 'Starting...';
+      plannerEl.textContent = '(waiting...)';
+      analyzerEl.textContent = '(waiting...)';
+      executorEl.textContent = '(waiting...)';
+      refereeEl.textContent = '(waiting...)';
+      logEl.textContent = '';
+
+      try {
+        const resp = await fetch('/run-stream', {
+          method: 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ input })
+        });
+
+        if (!resp.ok) {
+          const txt = await resp.text();
+          appendLog(`Server error: ${txt}`);
+          statusEl.textContent = `Error: ${resp.status}`;
+          return;
+        }
+
+        statusEl.textContent = "Running pipeline...";
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        function processBuffer() {
+          let events = buffer.split("\n\n");
+          buffer = events.pop();
+
+          for (const raw of events) {
+            if (!raw.trim()) continue;
+
+            let eventName = "";
+            let dataLines = [];
+
+            raw.split("\n").forEach(line => {
+              if (line.startsWith("event:")) {
+                eventName = line.replace("event:", "").trim();
+              } else if (line.startsWith("data:")) {
+                dataLines.push(line.replace("data:", "").trim());
+              }
+            });
+
+            const data = dataLines.join("\n");
+
+            if (eventName === "status") {
+              statusEl.textContent = data;
+              appendLog("STATUS: " + data);
+            }
+            else if (eventName === "planner") {
+              renderMarkdown(plannerEl, data);
+              appendLog("Planner output received");
+            }
+            else if (eventName === "analyzer") {
+              renderMarkdown(analyzerEl, data);
+              appendLog("Analyzer output received");
+            }
+            else if (eventName === "executor") {
+              renderMarkdown(executorEl, data);
+              appendLog("Executor output received");
+            }
+            else if (eventName === "referee") {
+              renderMarkdown(refereeEl, data);
+              appendLog("Referee output received");
+            }
+            else if (eventName === "error") {
+              appendLog("ERROR: " + data);
+            }
+            else if (eventName === "done") {
+              appendLog("Pipeline complete");
+              statusEl.textContent = "Done";
+            }
+          }
+        }
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            processBuffer();
+            appendLog("Stream closed");
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          processBuffer();
+        }
+
+      } catch (err) {
+        appendLog("Fetch error: " + err);
+        statusEl.textContent = "Fetch failed";
+      }
+    });
+</script>
+
+</body>
+</html>
